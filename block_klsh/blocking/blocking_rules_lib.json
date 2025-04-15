@@ -1,0 +1,28 @@
+{
+    "rules": {
+        "phonetic_combination": {
+            "type": "text",
+            "params": {"algorithms": ["first_char", "first_two_char", "first_three_char", "last_three_char", "consonants"]},
+            "default": false,
+            "description": "multi-method pari-passu name blocking"
+        },
+        "two_of_three_date": {
+            "type": "temporal",
+            "params": "",
+            "default": false,
+            "description": "Blocking based on two of three date components matching (month-year + day-year, month-year + day-month, day-year + day-month)"
+        },
+        "adaptive_quantile_binning": {
+            "type": "numeric",
+            "params": {"n_bins": 10, "KBinsDiscretizer_encode": "ordinal", "KBinsDiscretizer_binning_method": "quantile"},
+            "default": true,
+            "description": "RobustScaler Quantile-KBinsDiscretizer on data for bins with ~equal num samples in each bin"
+        },
+        "sliding_window": {
+            "type": "temporal",
+            "params": {"window_days": 7},
+            "default": false,
+            "description": "7-day sliding window blocks"
+        }
+    }
+}
