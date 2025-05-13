@@ -1,7 +1,7 @@
 # Project
 As part of our experimentation with methods for entity resolution tasks, I perform an exploration of the usefulness of a feed forward network's learned representations of record features for tabular data which serve as inputs for an entity resolution clustering algorithm.
 
-The network architecture, experiements, results and references are [documented in in this publication](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt).
+The network architecture, experiements, results and references are documented in in this publication ["Entity Resolution: Learned Representations of Tabular Data with Classic Neural Networks"](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt).
 
 The code project is an experimental prototype for research and does not address full error handling or production standards, and it's rather a setup for quick prototyping.
 
