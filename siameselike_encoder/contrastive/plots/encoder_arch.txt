@@ -1,0 +1,44 @@
+=================================================================
+Layer (type:depth-idx)                   Param #
+=================================================================
+Tabular_Numeric_Encoder                  --
+├─Embedding: 1-1                         80
+├─Sequential: 1-2                        --
+│    └─Linear: 2-1                       128
+│    └─ReLU: 2-2                         --
+│    └─Dropout: 2-3                      --
+├─Sequential: 1-3                        --
+│    └─Linear: 2-4                       128
+│    └─LeakyReLU: 2-5                    --
+│    └─Dropout: 2-6                      --
+├─Sequential: 1-4                        --
+│    └─Linear: 2-7                       48
+│    └─ReLU: 2-8                         --
+│    └─Dropout: 2-9                      --
+├─Sequential: 1-5                        --
+│    └─Linear: 2-10                      576
+│    └─ReLU: 2-11                        --
+├─Sequential: 1-6                        --
+│    └─Linear: 2-12                      4,160
+│    └─ReLU: 2-13                        --
+├─Sequential: 1-7                        --
+│    └─Linear: 2-14                      4,160
+│    └─ReLU: 2-15                        --
+├─Sequential: 1-8                        --
+│    └─Linear: 2-16                      1,088
+│    └─ReLU: 2-17                        --
+├─Sequential: 1-9                        --
+│    └─Linear: 2-18                      131,584
+│    └─LeakyReLU: 2-19                   --
+│    └─Dropout: 2-20                     --
+│    └─Linear: 2-21                      65,664
+├─Linear: 1-10                           9
+├─Linear: 1-11                           90
+├─Linear: 1-12                           65
+├─Linear: 1-13                           65
+├─Linear: 1-14                           34
+=================================================================
+Total params: 207,879
+Trainable params: 207,879
+Non-trainable params: 0
+=================================================================

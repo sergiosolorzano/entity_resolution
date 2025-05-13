@@ -31,7 +31,7 @@ if __name__ == "__main__":
     data_df['name'] = data_df['name'].astype(str)
     data_df['tension'] = pd.to_numeric(data_df['tension'], errors='coerce')
     data_df['longevity'] = pd.to_datetime(data_df['longevity'], format="%d/%m/%Y", errors="coerce")
-    print(data_df.head())
+    print(data_df)
     
     #create tree and get strategy stages and specs
     blocker = BlockTree()

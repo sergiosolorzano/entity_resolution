@@ -3,27 +3,29 @@
 ## Project:
 This repo sub-directory is part of a set of projects that aim at solving deduplication and the identification of diverse records to its correct entity.
 
+The methodology and its implementation is described in more detail in this blog ["Entity Resolution: Meta-Blocking and KLSH"](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs).
+
 The project is an experimental prototype for research and does not address full error handling or production standards.
 
 It builds a hierarchical directed graph where each level corresponds to nodes generated from a blocking rule/s. This approach reduces all dataset record comparisons which is an O(n²) to O(n) thus reducing the computational requirements for downstream processing since we would only be comparing records within components; the approach helps us present a reasonable scalable solution.
 
 Each node in a graph level groups co-occurring records based on a rule.
 
-![graph_tree](https://github.com/user-attachments/assets/0441a132-bbd2-4ea6-9dcb-880ef7c31b92)
+![graph_tree](readme_images/hierarchical_directed_graph.png)
 
 Further hierarchical rules applied to these nodes can yield children nodes at deeper graph levels. 
 
 Records in nodes can be grouped together into components subject to a minimum number of co-ocurrences within the graph.
 
-![preprun_components_graph](https://github.com/user-attachments/assets/db4ebe32-50d0-4553-b5a1-ab76a256cb66)
+![preprun_components_graph](readme_images/preprunning-graph.png)
 
 We track block provenance so that each time two records co-occur in the same block, their edge weight increases by 1. Records whose edge weight is above a certain threshold form a graph component.
 
-![Pruned_components_graph](https://github.com/user-attachments/assets/61b2c492-57ee-44dc-8f55-47acd16a7b29)
+![Pruned_components_graph](readme_images/prunned_graph.png)
 
 The resulting records in a component are broken down into clusters applying KMeans, referred herein and existing [literature](https://arxiv.org/pdf/1810.05497) as KLSH.
 
-![klsh_entities_graph_k_4_comp_0](https://github.com/user-attachments/assets/d8266d8d-40a4-43aa-9baa-399f5306f957)
+![klsh_entities_graph_k_4_comp_0](readme_images/klsh-entities-graph.png)
 
 We run Bayesian optimization to determine the feature weights across all components and objective function targeting the average of all components' results F1=1.
 
@@ -32,7 +34,7 @@ The process results in entity resolution for the training dataset of F-1/Precisi
 <p>&nbsp;</p>
 
 ## Project Blog Post:
-Read the [ReadyTensor methodology blog]() for a description of the approach and its implementation.
+Read this [blog](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs) for a description of the approach and its implementation.
 
 <p>&nbsp;</p>
 

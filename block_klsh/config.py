@@ -25,6 +25,7 @@ static_threshold_weight = 1.5
 #blocking rules
 scenario_blocking_rules = ([
         ('name', {'rule':'phonetic_combination'}),
+        #('resonance', {'rule': 'adaptive_quantile_binning', 'params': {'n_bins': 2}}),
     ])
 default_bins = 2
 global_kb_discretizer_fn = "_global_kb_discretizer.joblib"
