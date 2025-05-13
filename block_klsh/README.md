@@ -96,7 +96,7 @@ conda install -c conda-forge pygraphviz
 
 <p>&nbsp;</p>
 
-# Repo structure
+## Repo structure
 <pre>
 C:.
 │   config.py          
