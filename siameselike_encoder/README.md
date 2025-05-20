@@ -8,7 +8,7 @@ The code project is an experimental prototype for research and does not address 
 # Methodology
 Our approach aims at generating embeddings of record features with a neural network which will serve as inputs to a hierarchical clustering algorithm to clusters records.
 
-We choose a siamese-like feed-forward neural network. It aims at setting entities apart in the representation space and based on the similarity of each record's feature embeddings. We calculate similarity by manipulating distance to reflect similarity. 
+We choose a [siamese](https://www.baeldung.com/cs/siamese-networks)-like feed-forward neural network. It aims at setting entities apart in the representation space and based on the similarity of each record's feature embeddings. We calculate similarity by manipulating distance to reflect similarity. 
 ```python
 sim_anchor_pos = torch.clamp(1 - dist_anchor_pos / margin, min=0, max=1)
 ```
@@ -20,7 +20,7 @@ We compute how far these records are represented in the embedding space and a lo
 
 Based on our results and [existing literature](https://wcxie.github.io/Weicheng-Xie/pdf/ICIP2019.pdf), we further refine the training approach by selecting harder records based on their distance.
 
-We add an auxiliary reconstruction head for each feature in the network to keep track that the information for each feature in the representation space if preserved.
+We add an auxiliary reconstruction head for each feature in the network to keep track that the information for each feature in the representation space is preserved.
 
 Finally, the resulting encoder learned representations from the model become an input to a [hierarchical clustering algorithm](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html) and we compare these results to ground truth. Thus we will often refer herein to the neural network as an encoder in that it generates embedding inputs where hopefully semantically similar records are placed together in the representation space, and those different far apart.
 
@@ -48,10 +48,10 @@ We apply dropout = 0.3 on the early layers.
 To avoid overfitting we further apply weight decay on all layers with values between 0.00001 to 0.000005, except for the combined layer 0.01 which we observe memorizes the training data.
 
 # Datasets
-Both training and evaluation datasets were synthetically generated using a spreadsheet and rules to establish record features distance. The training dataset counts with over 13,000 triplets or over 40,000 piano records. The evaluation dataset counts with over 2400 triplets or over 7000 records. 
-Our test synthetic dataset contains 10 records which are two piano models and we aim to separate these records by model.
+Both training and evaluation datasets are imaginary and were created using a spreadsheet and rules to establish record features distance. The training dataset counts with over 13,000 triplets or over 40,000 piano records. The evaluation dataset counts with over 2400 triplets or over 7000 records. 
+Our test dataset contains 10 records which are two piano models and we aim to separate these records by model.
 
-We use the synthetic data rules mentioned above to generate a positive and a negative record from an anchor to which we add small variations. This produces two groups of 5 records each for ground truth, one reflecting positive records and another for negative records. We expect the clustering algorithm to results in two clusters.
+We use the data rules mentioned above to generate a positive and a negative record from an anchor to which we add small variations. This produces two groups of 5 records each for ground truth, one reflecting positive records and another for negative records. We expect the clustering algorithm to results in two clusters.
 
 We add some records to the testing dataset to generate an testing enhanced dataset. We do this by changing one feature in record 0 of the Test dataset and add these rows (10-13) to the test dataset. Record 14 is a variation of the second piano model (quality feature is changed) in the test dataset.
 
@@ -88,3 +88,22 @@ Execution:
 
 # Conda env considerations:
 As of 13/5/2025 +cu128 this worked to install torch: pip install --pre torch==2.8.0.dev20250325+cu128 torchvision==0.22.0.dev20250325+cu128 torchaudio==2.6.0.dev20250325+cu128 --index-url https://download.pytorch.org/whl/nightly/cu128
+
+## Project Publication Post:
+Read this [blog](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt) for a description of the approach and its implementation.
+
+<p>&nbsp;</p>
+
+## License
+This project is licensed under the MIT License. See LICENSE.txt for more information.
+
+<p>&nbsp;</p>
+
+## Contact
+For questions or collaborations please reach out to sergiosolorzano@gmail.com
+
+<p>&nbsp;</p>
+
+If you find this helpful you can buy me a coffee :)
+
+<a href="https://www.buymeacoffee.com/sergiosolorzano" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>      

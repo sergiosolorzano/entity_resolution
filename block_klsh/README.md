@@ -1,39 +1,52 @@
 # Entity Resolution - Meta-Blocking and KLSH
 
 ## Project:
-This repo sub-directory is part of a set of projects that aim at solving deduplication and the identification of diverse records to its correct entity.
+This repo sub-directory is part of a set of projects to explore the capabilities of ML/AI methods in entity resolution problems. It aims at solving deduplication and the identification of diverse records to group their corresponding entity.
 
 The methodology and its implementation is described in more detail in this blog ["Entity Resolution: Meta-Blocking and KLSH"](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs).
 
-The project is an experimental prototype for research and does not address full error handling or production standards.
+The project is an experimental prototype for research and does not address full error handling or production standards, and it's rather a setup for quick prototyping
 
-It builds a hierarchical directed graph where each level corresponds to nodes generated from a blocking rule/s. This approach reduces all dataset record comparisons which is an O(n²) to O(n) thus reducing the computational requirements for downstream processing since we would only be comparing records within components; the approach helps us present a reasonable scalable solution.
+The proposed approach has three sequential stages. Firstly the generation of a hierarchical graph for records in blocks, followed by the generation of a record relationship graph with components; finally we cluster the records for each component using a K-Means algorithm, an approach we refer herein as KLSH.
 
-Each node in a graph level groups co-occurring records based on a rule.
+- *Hierarchical graph*: We build a hierarchical directed graph where each level corresponds to blocks generated from a blocking rule/s.
+  - Each block in a graph level groups co-occurring records in blocks based on a rule. Hierarchical rules applied to blocks yield children blocks at deeper graph levels.
 
 ![graph_tree](readme_images/hierarchical_directed_graph.png)
 
-Further hierarchical rules applied to these nodes can yield children nodes at deeper graph levels. 
+- *Record Relationship graph*: Two records in a block is referred as that they co-occur and this relationship is represented as an edge between these two records. We graph co-ocurrence and edges in a record relationship graph where we refer to records as nodes.
+  - In this record relationship graph, components are formed when a group of nodes are all connected to each other, either directly, or indirectly through other nodes.
+  
+  ![preprun_components_graph](readme_images/preprunning-graph.png)
+  
+  - We increase the count of a node edge for each co-ocurrence. This weight metric signals the strenth of a relationship between records.
+  - We prune components according to a threshold number of edge count between nodes.
 
-Records in nodes can be grouped together into components subject to a minimum number of co-ocurrences within the graph.
+  ![preprun_components_graph](readme_images/preprunning-graph.png)
 
-![preprun_components_graph](readme_images/preprunning-graph.png)
+The generation of clustering components reduces all dataset record comparisons which is an O(n) to O(n) thus reducing the computational requirements for downstream processing since we would only be comparing records within components; the approach helps us present a reasonable scalable solution.
 
-We track block provenance so that each time two records co-occur in the same block, their edge weight increases by 1. Records whose edge weight is above a certain threshold form a graph component.
+```python
+Assuming 1000 records, from n*(n-1)/2 = 1000*999/2 = 499,500 comparisons without blocking
+to
+assuming 100 components evenly split with 10 records each, 10*9/2=45 comparisons per component
+45 * 100 components = 4500
 
-![Pruned_components_graph](readme_images/prunned_graph.png)
+== That's over 110x reduction in comparisons ==
+```
 
-The resulting records in a component are broken down into clusters applying KMeans, referred herein and existing [literature](https://arxiv.org/pdf/1810.05497) as KLSH.
+- *KLSH:* Component records are broken down into clusters applying a K-Means algorithm, the approach of which is referred herein and inspired by existing [literature](https://arxiv.org/pdf/1810.05497) as KLSH.
+  - K-means is helpful in that it can place records that are similar in the same bucket or cluster but apart from those that are different; the approach treats each cluster as a bucket mimicking LSH though it doesn't use hashing. 
+  - We apply and optimize the weights of transformed record features via Bayesian Optimization with objective function targeting the average of all components' results F1=1. These features are inputs to a Kmeans algorithm to calculate the square ecludian distances to centroids and cluster records.
+  - The resulting records in a component are broken down into clusters applying KMeans, referred herein and existing [literature](https://arxiv.org/pdf/1810.05497) as KLSH.
 
-![klsh_entities_graph_k_4_comp_0](readme_images/klsh-entities-graph.png)
+  ![klsh_entities_graph_k_4_comp_0](readme_images/klsh-entities-graph.png)
 
-We run Bayesian optimization to determine the feature weights across all components and objective function targeting the average of all components' results F1=1.
-
-The process results in entity resolution for the training dataset of F-1/Precision/Recall=0.952/1.00/0.916.
+The process results in an entity resolution result for the dataset of F-1/Precision/Recall=0.952/1.00/0.916.
 
 <p>&nbsp;</p>
 
-## Project Blog Post:
+## Project Publication Post:
 Read this [blog](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs) for a description of the approach and its implementation.
 
 <p>&nbsp;</p>
@@ -76,7 +89,7 @@ ground_truth_pairs_component_0 = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 2), (1, 3)
 <p>&nbsp;</p>
 
 ## Dataset
-A small manually produced dataset of 20 piano models that have 7 features with types including string, date, numeric and ordinal categories. It's is stored in /data.
+A small imaginary and manually produced dataset of 20 piano models that have 7 features with types including string, date, numeric and ordinal categories. It's is stored in /data.
 
 <p>&nbsp;</p>
 
@@ -99,7 +112,7 @@ conda install -c conda-forge pygraphviz
 ## Repo structure
 <pre>
 C:.
-│   config.py          
+│   config.py          # config variables
 │   context.py         
 │   manager.py         # Main controller script  
 │   requirements.txt   
@@ -108,7 +121,6 @@ C:.
 ├───clustering         # KLSH clustering engine  
 ├───data               # Dataset  
 ├───features           # Feature engineering scripts  
-├───global_transf      # Feature normalization artifacts  
 ├───graphs             # Graph images  
 └───optimization       # Bayesian optimization script  
 </pre>
@@ -122,6 +134,7 @@ This project is licensed under the MIT License. See LICENSE.txt for more informa
 
 ## Contact
 For questions or collaborations please reach out to sergiosolorzano@gmail.com
+
 
 <p>&nbsp;</p>
 

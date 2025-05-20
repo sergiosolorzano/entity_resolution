@@ -24,7 +24,7 @@ class KLSH_Engine():
         self.singleton_list = []
         self.final_klsh_clusters = {}
 
-    def predict_klsh_clusters_and_metrics(self, component_pairs_and_singletons_list, data_df, 
+    def predict_klsh_clusters_and_metrics(self, component_pairs_and_singletons_list, data_df: pd.DataFrame, 
                                           component_idx, k_bottom, k_top):
         
         self.final_klsh_clusters = {}
@@ -33,8 +33,8 @@ class KLSH_Engine():
         if component_idx==0: true_pairs = config.true_pairs_component_0
         elif component_idx==1: true_pairs = config.true_pairs_component_1
         elif component_idx==2: true_pairs = config.true_pairs_component_2
-        elif component_idx==3: true_pairs = config.true_pairs_component_3
-        elif component_idx==4: true_pairs = config.true_pairs_component_3
+        # elif component_idx==3: true_pairs = config.true_pairs_component_3
+        # elif component_idx==4: true_pairs = config.true_pairs_component_3
         else:
             print("Ground Truth Component Values not found, exiting.")
             exit(0)
@@ -145,9 +145,9 @@ class KLSH_Engine():
 
         return cossim_matrix_df
     
-    def klsh_embedding_numeric(self, data_df, k, target_num_k, weights, feature_engineering_instance:Feature_Engineering, random_state=42):
+    def klsh_embedding_numeric(self, data_df: pd.DataFrame, k, target_num_k, weights, feature_engineering_instance:Feature_Engineering, random_state=42):
         
-        # Create numeric features from timestamps and other numeric columns
+        #transform features
         if config.verbose:
             print("datadf", data_df)
         
@@ -155,6 +155,7 @@ class KLSH_Engine():
 
         df_numeric = df_numeric.drop('name', axis=1)
 
+        #tension, resonance, amt_sold fit to standardscaler
         for col in df_numeric.columns:
             if col != 'name' and col!='longevity' and col!='quality' and col!='tension_adj':
                 df_numeric[[col]] = StandardScaler().fit_transform(df_numeric[[col]])

@@ -39,7 +39,6 @@ if __name__ == "__main__":
     rule_stage_info_dict = blocker._register_scenario_blocking_rules(config.scenario_blocking_rules, blocking_rules_lib)
     
     #visualize pre-pruned graph
-    blocker._fit_global_transformers(data_df)
     blocker._create_block_key(data_df)
 
     #visualize tree
@@ -72,7 +71,7 @@ if __name__ == "__main__":
             df = data_df.iloc[list(idx)]
         components_df.append(df)
 
-    #train LLSH
+    #train KLSH
     if config.uniform_weights_klsh:
 
         df_numeric, pred_clusters, metrics_pairs_result_df, lowest_k_highest_F1_row = klsh_engine_instance.predict_klsh_clusters_and_metrics(component_pairs_and_singletons_list, data_df, config.component_idx, config.k_bottom, config.k_top)

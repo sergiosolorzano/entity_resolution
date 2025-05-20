@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import joblib
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, FunctionTransformer, RobustScaler, QuantileTransformer
-from sklearn.preprocessing import KBinsDiscretizer
 from jellyfish import soundex, metaphone
 
 import config
@@ -67,62 +66,7 @@ class Rule_Methods_Library:
 
         return result
                 
-    def _adaptive_binning(self, feature_series:pd.Series, method_params:dict, feature_name:str) -> pd.Series:
-
-        global_transformers = self._load_global_transformers(feature_name)
-        global_robust_scaler = global_transformers["robust_scaler"]
-        global_kb_discretizer = global_transformers["kb_discretizer"]
-
-        robust_scaled_values = global_robust_scaler.transform(feature_series.values.reshape(-1,1))
-        #ravel to flatted it 1D compatible with series
-        bins = global_kb_discretizer.transform(robust_scaled_values).ravel()
-
-        if config.verbose:
-            print(f"\n{feature_name} - Bin edges (after applying global transformers):")
-            print("\tEdges:", global_kb_discretizer.bin_edges_[0])
-            print(f"\tThere are {len(global_kb_discretizer.bin_edges_[0])} edges thus {len(global_kb_discretizer.bin_edges_[0])-1} bins")
-            print("\tGlobal counts per bin (on full data):", np.bincount(global_kb_discretizer.transform(robust_scaled_values).astype(int).ravel()))
-
-        bins_str = pd.Series(bins, index=feature_series.index).astype(str)
-        
-        #print("_adaptive_quantile_binning key list", bins_str)
-        
-        return bins_str
-
     def _sliding_window(self, feature_series:pd.Series, method_params:dict, feature_name:str) -> pd.Series:
         dt = pd.to_datetime(feature_series)
         days = (dt - pd.Timestamp('1970-01-01')).dt.days
         return (days // method_params["algorithms"]).astype(str)
-
-    def _load_global_transformers(self, feature):
-
-        transformers = {}
-
-        def load_kb_discretizer():
-            kb_discretizer_fn = f"{config.global_transformers_dir}/{feature}{config.global_kb_discretizer_fn}"
-            return joblib.load(kb_discretizer_fn)
-
-        def load_robust_scaler():
-            scaler_fn = f"{config.global_transformers_dir}/{feature}{config.global_robust_scaler_fn}"
-            return joblib.load(scaler_fn)
-        
-        try:
-            disc = load_kb_discretizer()
-            transformers["kb_discretizer"] = disc
-        except:
-            print("[ERROR]: Failed to Load Global Discretizer")
-
-        try:
-            scaler = load_robust_scaler()
-            transformers["robust_scaler"] = scaler
-        except:
-                print("[ERROR]: Failed to Load Global Discretizer")
-
-        return transformers
-
-    
-
-        
-
-
-

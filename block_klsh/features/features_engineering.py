@@ -57,7 +57,7 @@ class Feature_Engineering:
         
         return cos_series, sin_series
     
-    # two_of_three_date binning
+    #two_of_three_date binning
     def get_date_features(self, date_series):
         date_series = pd.to_datetime(date_series, errors="coerce")
         

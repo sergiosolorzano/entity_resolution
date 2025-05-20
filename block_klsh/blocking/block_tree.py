@@ -2,7 +2,6 @@ import json, joblib
 import copy
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, FunctionTransformer, RobustScaler, QuantileTransformer
-from sklearn.preprocessing import KBinsDiscretizer
 
 from blocking.rule_methods import Rule_Methods_Library
 import config
@@ -85,35 +84,7 @@ class BlockTree:
                 }
 
         return self.rule_stage_info_dict
-            
-    def _fit_global_transformers(self, data_df):
-
-        for stage, rule in self.rule_stage_info_dict.items():
-            
-            if rule["rule_name"] == "adaptive_quantile_binning" or rule["rule_name"] == "adaptive_uniform_binning":
-                
-                try:
-                    n_bins = rule["rule_specs"]["params"]["n_bins"]
-                except:
-                    n_bins = config.default_bins
-                    print(f"Global KBDiscretizer: {rule["rule_name"]} missing n_bin, setting default {config.default_bins}")
-
-                values = data_df[rule["feature"]].values.reshape(-1,1)
-                
-                robust_scaler = RobustScaler()
-                robust_scaled_values = robust_scaler.fit_transform(values)
-                joblib.dump(robust_scaler, f"{config.global_transformers_dir}/{rule["feature"]}{config.global_robust_scaler_fn}")
-
-                kb_discretizer = KBinsDiscretizer(n_bins=n_bins, encode=rule["rule_specs"]["params"]["KBinsDiscretizer_encode"], strategy=rule["rule_specs"]["params"]["KBinsDiscretizer_binning_method"])
-                kb_discretizer.fit(robust_scaled_values)
-                joblib.dump(kb_discretizer, f"{config.global_transformers_dir}/{rule["feature"]}{config.global_kb_discretizer_fn}")
-                
-                if config.verbose:
-                    print(f"Done fitting and saving global KBdiscretizer/scaler for {rule["rule_name"]} feature {rule["feature"]}.")
-
-            else:
-                print(f"=== WARNING: No rule requested for Global Transformer to Fit for {rule["rule_name"]} ===")
-
+    
     def _create_block_key(self, data_df):
 
         current_block = {}
@@ -184,16 +155,8 @@ class BlockTree:
             return self.rule_method_instance._phonetic
         if block_rule_name=="phonetic_combination":
             return self.rule_method_instance._phonetic_combination
-        if block_rule_name=="one_of_three_date":
-            return self.rule_method_instance._one_of_three_date
         if block_rule_name=="two_of_three_date":
             return self.rule_method_instance._two_of_three_date
-        if block_rule_name=="adaptive_quantile_binning":
-            return self.rule_method_instance._adaptive_binning
-        if block_rule_name=="adaptive_uniform_binning":
-            return self.rule_method_instance._adaptive_binning
-        if block_rule_name=="residual_merge":
-            return self.rule_method_instance._residual_merge
 
     def _track_pair_provenance_and_weights(self):
         
