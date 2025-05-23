@@ -1,7 +1,7 @@
 # Project
 As part of our experimentation with methods for entity resolution tasks, I perform an exploration of the usefulness of a feed forward network's learned representations of record features for tabular data which serve as inputs for an entity resolution clustering algorithm.
 
-The network architecture, experiements, results and references are documented in in this publication ["Entity Resolution: Learned Representations of Tabular Data with Classic Neural Networks"](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt).
+The network architecture, experiements, results and references are documented in in this publication ["Entity Resolution: Learned Representations of Tabular Data with a Classic Neural Network"](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt).
 
 The code project is an experimental prototype for research and does not address full error handling or production standards, and it's rather a setup for quick prototyping.
 
@@ -56,7 +56,7 @@ We use the data rules mentioned above to generate a positive and a negative reco
 We add some records to the testing dataset to generate an testing enhanced dataset. We do this by changing one feature in record 0 of the Test dataset and add these rows (10-13) to the test dataset. Record 14 is a variation of the second piano model (quality feature is changed) in the test dataset.
 
 # Project Directory
-To make it easier to access the three loss criterion variations implemented in this project and described in [this methodology blog](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt), I have create a sub-directory for each:
+I have create a sub-directory for each of the three loss criterion variation implementations:
 
 | |  |
 |--------|---------|
@@ -66,13 +66,13 @@ To make it easier to access the three loss criterion variations implemented in t
 | triplet_loss_margin_mining | Model trained with Triplet Loss Margin Criterion and Hard-negative mining samples |
 
 # Usage
-Model Mode:
+Model Settings:
 - Training (Evaluation occurs at epoch intervals) toggled at config.run_inference_hierarchical_clustering = False
 - Set number of training epochs at config.tne_train_epoch = #
 - Set loss function at config.loss_function = choose "contrastive" "tripletmargin" or "tripletmargin_mining"
 - To run Inference on a test dataset set config.run_inference_hierarchical_clustering = True
 
-Execution:
+Running the script:
 1. cd to the desired experiment directory (e.g. contrastive)
 2. Execute the program
 	$ python m_manager.py
@@ -87,7 +87,7 @@ Execution:
 - Set your ffmpeg.exe path at config.embed_mp4 = r"C:\ProgramData\miniconda3\envs\entity-rel\Library\bin\ffmpeg.exe"
 
 # Conda env considerations:
-As of 13/5/2025 +cu128 this worked to install torch: pip install --pre torch==2.8.0.dev20250325+cu128 torchvision==0.22.0.dev20250325+cu128 torchaudio==2.6.0.dev20250325+cu128 --index-url https://download.pytorch.org/whl/nightly/cu128
+To install torch, +cu128 worked for me: pip install --pre torch==2.8.0.dev20250325+cu128 torchvision==0.22.0.dev20250325+cu128 torchaudio==2.6.0.dev20250325+cu128 --index-url https://download.pytorch.org/whl/nightly/cu128
 
 ## Project Publication Post:
 Read this [blog](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt) for a description of the approach and its implementation.
