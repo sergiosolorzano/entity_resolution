@@ -22,7 +22,7 @@ The proposed approach has three sequential stages. Firstly the generation of a h
   - We increase the count of a node edge for each co-ocurrence. This weight metric signals the strenth of a relationship between records.
   - We prune components according to a threshold number of edge count between nodes.
 
-  ![preprun_components_graph](readme_images/preprunning-graph.png)
+  ![preprun_components_graph](readme_images/prunned_graph.png)
 
 The generation of clustering components reduces all dataset record comparisons which is an O(n) to O(n) thus reducing the computational requirements for downstream processing since we would only be comparing records within components; the approach helps us present a reasonable scalable solution.
 
