@@ -35,7 +35,7 @@ assuming 100 components evenly split with 10 records each, 10*9/2=45 comparisons
 == That's over 110x reduction in comparisons ==
 ```
 
-- *KLSH:* Component records are broken down into clusters applying a K-Means algorithm, the approach of which is referred herein and inspired by existing [literature](https://arxiv.org/pdf/1810.05497) as KLSH.
+- *KLSH:* This work builds upon the methodology proposed by [Steorts, Rebecca C., Anshumali Shrivastava “Probabilistic Blocking with An Application to the Syrian Conflict” October 2018, arXiv 1810.05497](https://arxiv.org/pdf/1810.05497). Component records are broken down into clusters applying a K-Means algorithm, the approach of which is referred herein from this research as KLSH.
   - K-means is helpful in that it can place records that are similar in the same bucket or cluster but apart from those that are different; the approach treats each cluster as a bucket mimicking LSH though it doesn't use hashing. 
   - We apply and optimize the weights of transformed record features via Bayesian Optimization with objective function targeting the average of all components' results F1=1. These features are inputs to a Kmeans algorithm to calculate the square ecludian distances to centroids and cluster records.
   - The resulting records in a component are broken down into clusters applying KMeans, referred herein and existing [literature](https://arxiv.org/pdf/1810.05497) as KLSH.
