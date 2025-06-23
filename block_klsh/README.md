@@ -6,6 +6,8 @@
   </a>
 </p>
 
+<p align="center">Git digest for performing LLM ingestion: ./gitingest/block_klsh_digest.txt</p>
+
 This repo sub-directory is part of a set of projects to explore the capabilities of ML/AI methods in entity resolution problems. It aims at solving deduplication and the identification of diverse records to group their corresponding entity.
 
 The methodology and its implementation is described in more detail in this blog ["Entity Resolution: Meta-Blocking and KLSH"](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs).
