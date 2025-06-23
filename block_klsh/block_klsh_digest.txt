@@ -1,0 +1,1596 @@
+Directory structure:
+└── block_klsh/
+    ├── README.md
+    ├── config.py
+    ├── context.py
+    ├── manager.py
+    ├── requirements.txt
+    ├── blocking/
+    │   ├── block_tree.py
+    │   ├── blocking_rules_lib.json
+    │   ├── blocking_utils.py
+    │   ├── graph_conn.py
+    │   ├── graph_visualization.py
+    │   └── rule_methods.py
+    ├── clustering/
+    │   ├── klsh_engine.py
+    │   ├── klsh_perf_visualization.py
+    │   └── perf_metrics.py
+    ├── data/
+    │   └── example_apollo_0.csv
+    ├── features/
+    │   └── features_engineering.py
+    ├── graphs/
+    ├── optimization/
+    │   └── bayopt_weights.py
+    └── readme_images/
+
+================================================
+File: block_klsh/README.md
+================================================
+# Entity Resolution - Meta-Blocking and KLSH
+
+<p align="center">
+  <a href="https://deepwiki.com/sergiosolorzano/entity_resolution/3-block-klsh-system">
+    <img src="https://img.shields.io/badge/DeepWiki-sergiosolorzano%2Fentity__resolution-blue.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAyCAYAAAAnWDnqAAAAAXNSR0IArs4c6QAAA05JREFUaEPtmUtyEzEQhtWTQyQLHNak2AB7ZnyXZMEjXMGeK/AIi+QuHrMnbChYY7MIh8g01fJoopFb0uhhEqqcbWTp06/uv1saEDv4O3n3dV60RfP947Mm9/SQc0ICFQgzfc4CYZoTPAswgSJCCUJUnAAoRHOAUOcATwbmVLWdGoH//PB8mnKqScAhsD0kYP3j/Yt5LPQe2KvcXmGvRHcDnpxfL2zOYJ1mFwrryWTz0advv1Ut4CJgf5uhDuDj5eUcAUoahrdY/56ebRWeraTjMt/00Sh3UDtjgHtQNHwcRGOC98BJEAEymycmYcWwOprTgcB6VZ5JK5TAJ+fXGLBm3FDAmn6oPPjR4rKCAoJCal2eAiQp2x0vxTPB3ALO2CRkwmDy5WohzBDwSEFKRwPbknEggCPB/imwrycgxX2NzoMCHhPkDwqYMr9tRcP5qNrMZHkVnOjRMWwLCcr8ohBVb1OMjxLwGCvjTikrsBOiA6fNyCrm8V1rP93iVPpwaE+gO0SsWmPiXB+jikdf6SizrT5qKasx5j8ABbHpFTx+vFXp9EnYQmLx02h1QTTrl6eDqxLnGjporxl3NL3agEvXdT0WmEost648sQOYAeJS9Q7bfUVoMGnjo4AZdUMQku50McDcMWcBPvr0SzbTAFDfvJqwLzgxwATnCgnp4wDl6Aa+Ax283gghmj+vj7feE2KBBRMW3FzOpLOADl0Isb5587h/U4gGvkt5v60Z1VLG8BhYjbzRwyQZemwAd6cCR5/XFWLYZRIMpX39AR0tjaGGiGzLVyhse5C9RKC6ai42ppWPKiBagOvaYk8lO7DajerabOZP46Lby5wKjw1HCRx7p9sVMOWGzb/vA1hwiWc6jm3MvQDTogQkiqIhJV0nBQBTU+3okKCFDy9WwferkHjtxib7t3xIUQtHxnIwtx4mpg26/HfwVNVDb4oI9RHmx5WGelRVlrtiw43zboCLaxv46AZeB3IlTkwouebTr1y2NjSpHz68WNFjHvupy3q8TFn3Hos2IAk4Ju5dCo8B3wP7VPr/FGaKiG+T+v+TQqIrOqMTL1VdWV1DdmcbO8KXBz6esmYWYKPwDL5b5FA1a0hwapHiom0r/cKaoqr+27/XcrS5UwSMbQAAAABJRU5ErkJggg==" alt="DeepWiki">
+  </a>
+</p>
+
+This repo sub-directory is part of a set of projects to explore the capabilities of ML/AI methods in entity resolution problems. It aims at solving deduplication and the identification of diverse records to group their corresponding entity.
+
+The methodology and its implementation is described in more detail in this blog ["Entity Resolution: Meta-Blocking and KLSH"](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs).
+
+The project is an experimental prototype for research and does not address full error handling or production standards, and it's rather a setup for quick prototyping
+
+The proposed approach has three sequential stages. Firstly the generation of a hierarchical graph for records in blocks, followed by the generation of a record relationship graph with components; finally we cluster the records for each component using a K-Means algorithm, an approach we refer herein as KLSH.
+
+- *Hierarchical graph*: We build a hierarchical directed graph where each level corresponds to blocks generated from a blocking rule/s.
+  - Each block in a graph level groups co-occurring records in blocks based on a rule. Hierarchical rules applied to blocks yield children blocks at deeper graph levels.
+
+![graph_tree](readme_images/hierarchical_directed_graph.png)
+
+- *Record Relationship graph*: Two records in a block is referred as that they co-occur and this relationship is represented as an edge between these two records. We graph co-ocurrence and edges in a record relationship graph where we refer to records as nodes.
+  - In this record relationship graph, components are formed when a group of nodes are all connected to each other, either directly, or indirectly through other nodes.
+  
+  ![preprun_components_graph](readme_images/preprunning-graph.png)
+  
+  - We increase the count of a node edge for each co-ocurrence. This weight metric signals the strenth of a relationship between records.
+  - We prune components according to a threshold number of edge count between nodes.
+
+  ![preprun_components_graph](readme_images/prunned_graph.png)
+
+The generation of clustering components reduces all dataset record comparisons which is an O(n) to O(n) thus reducing the computational requirements for downstream processing since we would only be comparing records within components; the approach helps us present a reasonable scalable solution.
+
+```python
+Assuming 1000 records, from n*(n-1)/2 = 1000*999/2 = 499,500 comparisons without blocking
+to
+assuming 100 components evenly split with 10 records each, 10*9/2=45 comparisons per component
+45 * 100 components = 4500
+
+== That's over 110x reduction in comparisons ==
+```
+
+- *KLSH:* This work builds upon the methodology proposed by [Steorts, Rebecca C., Anshumali Shrivastava “Probabilistic Blocking with An Application to the Syrian Conflict” October 2018, arXiv 1810.05497](https://arxiv.org/pdf/1810.05497). Component records are broken down into clusters applying a K-Means algorithm, the approach of which is referred herein from this research as KLSH.
+  - K-means is helpful in that it can place records that are similar in the same bucket or cluster but apart from those that are different; the approach treats each cluster as a bucket mimicking LSH though it doesn't use hashing. 
+  - We apply and optimize the weights of transformed record features via Bayesian Optimization with objective function targeting the average of all components' results F1=1. These features are inputs to a Kmeans algorithm to calculate the square ecludian distances to centroids and cluster records.
+  - The resulting records in a component are broken down into clusters applying KMeans, referred herein and existing [literature](https://arxiv.org/pdf/1810.05497) as KLSH.
+
+  ![klsh_entities_graph_k_4_comp_0](readme_images/klsh-entities-graph.png)
+
+The process results in an entity resolution result for the dataset of F-1/Precision/Recall=0.952/1.00/0.916.
+
+<p>&nbsp;</p>
+
+## Project Publication Post:
+Read this [blog](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs) for a description of the approach and its implementation.
+
+<p>&nbsp;</p>
+
+## Usage
+1. Execute the program
+```python
+$ python manager.py
+``` 
+2. Enter the ground truth tuple pairs as a list in config.py, e.g:
+```python
+ground_truth_pairs_component_0 = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4),
+                        (6, 7), (6, 8), (6, 9), (7, 8), (7, 9), (8, 9)]
+```
+3. Block and generate KLSH clusters by:
+```python
+   - set: config.uniform_weights_klsh = True
+   - set a component index, e.g: config.component_idx = 0
+```
+
+4. Run bayesian optimization to find custom weights across all components:
+```python
+   - set: config.uniform_weights_klsh = False
+   - set: config.bayesian_optimization_klsh = True
+```
+
+5. Test the optimized weights:
+  - enter the bayesian optimization optimized weights:
+```python
+  config.best_weights = [0.32922948, 0.36130566, 0.20008195, 0.82066852, 0.44855293, 0.62657605, 0.36378109, 0.4405338, 0.2413675]
+```
+  - generate the updated clusters for a component based on the optimized weights:
+```python
+  - set: config.uniform_weights_klsh = False
+  - set: config.bayesian_optimization_klsh = False
+  - set: config.test_optimized_weights_klsh = True
+  - set a component index, e.g: config.component_idx = 0
+```
+
+<p>&nbsp;</p>
+
+## Dataset
+A small imaginary and manually produced dataset of 20 piano models that have 7 features with types including string, date, numeric and ordinal categories. It's is stored in /data.
+
+<p>&nbsp;</p>
+
+## Tools & Libraries
+Graphs leverage networkx and pygraphviz libraries.
+Flexibility is built to create blocking rules based on soundex and metaphone.
+
+<p>&nbsp;</p>
+
+## Installation
+You can execute requirements.txt. Tested on Python 3.13.3.
+
+pygraphviz can be tricky to install, I found this command useful:
+```python
+conda install -c conda-forge pygraphviz
+```
+
+<p>&nbsp;</p>
+
+## Repo structure
+<pre>
+C:.
+│   config.py          # config variables
+│   context.py         
+│   manager.py         # Main controller script  
+│   requirements.txt   
+│
+├───blocking           # Blocking scripts and rules  
+├───clustering         # KLSH clustering engine  
+├───data               # Dataset  
+├───features           # Feature engineering scripts  
+├───graphs             # Graph images  
+└───optimization       # Bayesian optimization script  
+</pre>
+
+<p>&nbsp;</p>
+
+## License
+This project is licensed under the MIT License. See LICENSE.txt for more information.
+
+<p>&nbsp;</p>
+
+## Contact
+For questions or collaborations please reach out to sergiosolorzano@gmail.com
+
+
+<p>&nbsp;</p>
+
+If you find this helpful you can buy me a coffee :)
+
+<a href="https://www.buymeacoffee.com/sergiosolorzano" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>      
+
+
+
+================================================
+File: block_klsh/config.py
+================================================
+from datetime import datetime, timedelta
+
+verbose = True
+
+#scenario
+uniform_weights_klsh = True
+bayesian_optimization_klsh = False
+test_optimized_weights_klsh = False
+component_idx = 0 #does not apply to Bayes. Bayes calculates mean objective of all components
+k_bottom = 1
+k_top = 10
+
+#feature engineering
+quality_ordinal_range = (0,9) #assumes start idx 0
+time_reference_date = datetime.strptime("1/1/2015", "%d/%m/%Y")
+time_max_time_frame = timedelta(days=365* 60)
+
+#blocking
+blocking_rules_fname = "blocking/blocking_rules_lib.json"
+block_tree_initial_block = "initial_block"
+source_data = "data/example_apollo_0.csv"
+graph_dir = "graphs"
+static_threshold_weight = 1.5
+
+#blocking rules
+scenario_blocking_rules = ([
+        ('name', {'rule':'phonetic_combination'}),
+    ])
+
+#bayes weights opt
+bayes_early_stopper_value = -1
+bayes_n_calls = 100
+best_weights = [0.32922948, 0.36130566, 0.20008195, 0.82066852, 0.44855293, 0.62657605, 0.36378109, 0.4405338, 0.2413675]
+
+feature_weights = {
+        'tension_adj_cos': 1,
+        'tension_adj_sin': 1,
+        'tension': 1,
+        'resonance': 1,
+        'longevity_cos': 1,
+        'longevity_sin': 1,
+        'quality_cos': 1,
+        'quality_sin': 1,
+        'amt_sold': 1
+    }
+
+##ground truth dataset pairs for performance metrics
+true_pairs_component_0 = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4),
+                        (6, 7), (6, 8), (6, 9), (7, 8), (7, 9), (8, 9)]
+true_pairs_component_1 = [(10, 11), (10, 12), (10, 13), (10, 15), (11, 12), (11, 13), (11, 15), (12, 13), (12, 15), (13, 15)]
+true_pairs_component_2 = [(16, 17), (16, 18), (16, 19), (16, 20), (17, 18), (17, 19), (17, 20), (18, 19), (18, 20), (19, 20)]
+
+
+================================================
+File: block_klsh/context.py
+================================================
+from clustering.klsh_engine import KLSH_Engine
+from features.features_engineering import Feature_Engineering
+from clustering.perf_metrics import Performance_Metrics
+
+
+class ER_Context:
+    def __init__(self):
+        self.feature_engineering_instance = Feature_Engineering()
+        self.perf_metrics_instance = Performance_Metrics()
+        self.klsh_engine_instance = KLSH_Engine(self.feature_engineering_instance, self.perf_metrics_instance)
+
+
+
+================================================
+File: block_klsh/manager.py
+================================================
+import pandas as pd
+import numpy as np
+import random
+
+from context import ER_Context
+
+from blocking.graph_conn import DeduP_Graph
+from blocking.block_tree import BlockTree
+from blocking.graph_visualization import visualize_graph_components
+
+from clustering.klsh_perf_visualization import plot_elbow
+
+import optimization.bayopt_weights as bayopt_weights
+
+import config as config
+
+np.random.seed(42)
+random.seed(42)
+
+if __name__ == "__main__":
+
+    #instantiate classes
+    ctx = ER_Context()
+    klsh_engine_instance = ctx.klsh_engine_instance
+    features_engineering_instance = ctx.feature_engineering_instance
+    
+    # Load and preprocess data
+    data_df = pd.read_csv(config.source_data, encoding='cp1252')
+    
+    # Data type conversions
+    data_df['name'] = data_df['name'].astype(str)
+    data_df['tension'] = pd.to_numeric(data_df['tension'], errors='coerce')
+    data_df['longevity'] = pd.to_datetime(data_df['longevity'], format="%d/%m/%Y", errors="coerce")
+    print(data_df)
+    
+    #create tree and get strategy stages and specs
+    blocker = BlockTree()
+    blocking_rules_lib = blocker._load_blocking_rules(config.blocking_rules_fname)
+    rule_stage_info_dict = blocker._register_scenario_blocking_rules(config.scenario_blocking_rules, blocking_rules_lib)
+    
+    #visualize pre-pruned graph
+    blocker._create_block_key(data_df)
+
+    #visualize tree
+    graph = DeduP_Graph()
+    graph._create_graph(blocker.tree_blocks)
+    graph._create_edges(blocker.tree_blocks)
+    graph._visualize_graph_tree()
+
+    #create preprune graph
+    graph_weights = blocker._track_pair_provenance_and_weights()
+    _, _, singleton_list = visualize_graph_components(graph_weights, f"{config.graph_dir}/preprun_components_graph", "Pre-prunning Provenance Components Graph", blocker.prepruned_graph_provenance)
+    ctx.klsh_engine_instance.singleton_list = singleton_list
+
+    #prune graph
+    pruned_pairs = blocker._prune_graph()
+    pruned_nx_graph, component_pairs_and_singletons_list, singleton_list = visualize_graph_components(blocker.pruned_graph, f"{config.graph_dir}/Pruned_components_graph", "Prunned Components Provenance Graph", blocker.prepruned_graph_provenance)
+    ctx.klsh_engine_instance.singleton_list = singleton_list
+
+    if config.verbose:
+        print("Final Blocking Components Pairs", component_pairs_and_singletons_list)
+
+    components_df = []
+    for i in range(len(component_pairs_and_singletons_list)):
+        df = pd.DataFrame(columns=data_df.columns)
+        if len(component_pairs_and_singletons_list[i]) > 1:
+            idx_set = set(idx for pair in component_pairs_and_singletons_list[i] for idx in pair)
+            df = data_df.iloc[list(idx_set)]
+        else:
+            idx = component_pairs_and_singletons_list[i]
+            df = data_df.iloc[list(idx)]
+        components_df.append(df)
+
+    #train KLSH
+    if config.uniform_weights_klsh:
+
+        df_numeric, pred_clusters, metrics_pairs_result_df, lowest_k_highest_F1_row = klsh_engine_instance.predict_klsh_clusters_and_metrics(component_pairs_and_singletons_list, data_df, config.component_idx, config.k_bottom, config.k_top)
+        
+        print("\n== Final Results ==")
+        if lowest_k_highest_F1_row is not None:
+            print("\nFeature_weights:\n", config.feature_weights)
+
+            print("\nPerformance Metric Pair Results:\n", metrics_pairs_result_df)
+            print("\nLowest K Highest F-1:\n", lowest_k_highest_F1_row)
+
+            if len(klsh_engine_instance.wcss_dict) > 0:
+                klsh_engine_instance.best_elbow_k = ctx.perf_metrics_instance.find_best_elbok_k(klsh_engine_instance.wcss_dict)
+                print("Knee WCSS", klsh_engine_instance.wcss_dict)
+                print("Knee best elbow", klsh_engine_instance.best_elbow_k)
+                plot_elbow(klsh_engine_instance.wcss_dict, config.component_idx)
+            print("Best silhouette Score:",klsh_engine_instance.best_sil_score, "Best silhouette K:", klsh_engine_instance.best_sil_k)
+
+            print("\n== Final Clusters: ==")
+            for k, k_cluster_records in ctx.klsh_engine_instance.final_klsh_clusters.items():
+                print(f"k={k}: ",k_cluster_records)
+            print("Singletons:",ctx.klsh_engine_instance.singleton_list)
+            
+            print("=== End of Training ===")
+        else:
+            print(f"No Precision Stats to report for component {config.component_idx} holding records {component_pairs_and_singletons_list[config.component_idx]}")
+
+        exit(0)
+    
+    #bayesian opt for weights
+    if config.uniform_weights_klsh==False and config.bayesian_optimization_klsh==True:
+        
+        bayopt = bayopt_weights.BayOpt(component_pairs_and_singletons_list, 
+                                       data_df, config.k_bottom, config.k_top)
+        best_weights = bayopt.run_klsh_bayopt(ctx)
+        print("\nFinal Best (avg) Bayesian Weights:",best_weights)
+
+        print("=== End of Bayesian Optimization ===")
+        exit(0)
+        
+    if config.uniform_weights_klsh==False and config.bayesian_optimization_klsh==False and config.test_optimized_weights_klsh==True:
+        
+        #hard code bayesian opt weights
+        config.feature_weights = {
+                'tension_adj_cos': config.best_weights[0],
+                'tension_adj_sin': config.best_weights[1],
+                'tension': config.best_weights[2],
+                'resonance': config.best_weights[3],
+                'longevity_cos': config.best_weights[4],
+                'longevity_sin': config.best_weights[5],
+                'quality_cos': config.best_weights[6],
+                'quality_sin': config.best_weights[7],
+                'amt_sold': config.best_weights[8]
+            }
+        
+        df_numeric, pred_clusters, metrics_pairs_result_df, lowest_k_highest_F1_row = klsh_engine_instance.predict_klsh_clusters_and_metrics(component_pairs_and_singletons_list, data_df, config.component_idx, config.k_bottom, config.k_top)
+        
+        print("\n== Final Results ==")
+        print("\nFeature_weights:\n", config.feature_weights)
+
+        print("\nPerformance Metric Pair Results:\n",metrics_pairs_result_df)
+        print("\nLowest K Highest F-1:\n", lowest_k_highest_F1_row)
+        
+        if len(klsh_engine_instance.wcss_dict) > 0:
+            klsh_engine_instance.best_elbow_k = ctx.perf_metrics_instance.find_best_elbok_k(klsh_engine_instance.wcss_dict)
+            print("Knee WCSS", klsh_engine_instance.wcss_dict)
+            print("Knee best elbow", klsh_engine_instance.best_elbow_k)
+            plot_elbow(klsh_engine_instance.wcss_dict, config.component_idx)
+        
+        plot_elbow(klsh_engine_instance.wcss_dict, config.component_idx)
+        print("Best silhouette Score:",klsh_engine_instance.best_sil_score, "Best silhouette K:", klsh_engine_instance.best_sil_k)
+        
+        print("\n== Final Clusters: ==")
+        for k, k_cluster_records in ctx.klsh_engine_instance.final_klsh_clusters.items():
+            print(f"k={k}: ",k_cluster_records)
+        print("Singletons:",ctx.klsh_engine_instance.singleton_list)
+        
+        print("=== End of Evaluation ===")
+        exit(0)
+
+        
+
+
+
+
+
+================================================
+File: block_klsh/requirements.txt
+================================================
+contourpy==1.3.1
+cycler==0.12.1
+fonttools==4.57.0
+jellyfish==1.2.0
+joblib==1.4.2
+kiwisolver==1.4.8
+kneed==0.8.5
+matplotlib==3.10.1
+networkx==3.4.2
+numpy==1.26.4
+packaging==24.2
+pandas==2.2.3
+pillow==11.2.1
+pyaml==25.1.0
+pygraphviz @ file:///D:/bld/pygraphviz_1727646166605/work
+pyparsing==3.2.3
+python-dateutil==2.9.0.post0
+pytz==2025.2
+PyYAML==6.0.2
+scikit-learn==1.6.1
+scikit-optimize==0.10.2
+scipy==1.15.2
+six==1.17.0
+threadpoolctl==3.6.0
+tzdata==2025.2
+
+
+
+================================================
+File: block_klsh/blocking/block_tree.py
+================================================
+import json, joblib
+import copy
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, FunctionTransformer, RobustScaler, QuantileTransformer
+
+from blocking.rule_methods import Rule_Methods_Library
+import config
+
+class BlockTree:
+    class Block():
+        def __init__(self):
+            self.hierarchy_level = 0
+            self.feature = None
+            self.parent_key = None
+            self.block_key = None
+            self.rule = None
+            self.indices = []
+            self.block_leaf = None
+
+    def __init__(self):
+        self.rule_stage_info_dict = {}
+        self.initial_block = config.block_tree_initial_block
+        self.rule_method_instance = Rule_Methods_Library()
+        
+        #tree creation
+        self.tree_blocks = {}
+        self.tree_block_count = 0
+        self.tree_hierarchy_count = 0
+
+        #determine pair weights graph
+        self.prepruned_graph = {}
+        #provenance calculation
+        self.prepruned_graph_provenance = {}
+        self.pruned_graph = {}
+        self.pruned_graph_provenance = {}
+        
+    def _print_all(self):
+        print("== Printing All Generated Blocks: ==")
+        for stage, block_dict in self.tree_blocks.items():
+            for counter, (block_key, block_instance) in enumerate(block_dict.items(), start=1):
+                print("Block Key",block_key)
+                print("\tBlock Hierarchy Level:",block_instance.hierarchy_level)
+                print("\tBlock Feature:",block_instance.feature)
+                print("\tBlock Parent Key:",block_instance.parent_key)
+                print("\tBlock Key:",block_instance.block_key)
+                print("\tLeaf Key:",block_instance.block_leaf)
+                print("\tBlock Rule:",block_instance.rule)
+                print("\tBlock Record Indices:",block_instance.indices)
+        print(f"== End of Tree Blocks, count: {counter} ==")
+
+    def _print_instance(self, block_instance_key):
+        for stage, block_dict in self.tree_blocks.items():
+            for block_key, block_instance in block_dict.items():
+                if(block_key == block_instance_key):
+                    print("Block Key",block_key)
+                    print("\tBlock Hierarchy Level:",block_instance.hierarchy_level)
+                    print("\tBlock Feature:",block_instance.feature)
+                    print("\tBlock Parent Key:",block_instance.parent_key)
+                    print("\tBlock Key:",block_instance.block_key)
+                    print("\tBlock Rule:",block_instance.rule)
+                    print("\tBlock Record Indices:",block_instance.indices)
+
+
+    def _load_blocking_rules(self, file_path=config.blocking_rules_fname):
+        try:
+            with open(file_path, 'r') as f:
+                rules = json.load(f)['rules']
+            return rules
+        except FileNotFoundError:
+            print(f"[ERROR]: Could not find {file_path}.")
+            return {}
+        
+    def _register_scenario_blocking_rules(self, scenario_blocking_rules, blocking_rules_lib):
+
+        for stage_num, (feature, rule) in enumerate(scenario_blocking_rules, 1):
+            
+            if isinstance(rule, dict):
+            
+                self.rule_stage_info_dict[stage_num] = {
+                    'stage_num': stage_num,
+                    'feature': feature,
+                    'rule_name': rule.get('rule'),
+                    'rule_specs': blocking_rules_lib[rule.get('rule')],
+                }
+
+        return self.rule_stage_info_dict
+    
+    def _create_block_key(self, data_df):
+
+        current_block = {}
+        
+        #root node
+        initial_block = {config.block_tree_initial_block: frozenset(data_df.index)}
+
+        block_instance = self.Block()
+        block_instance.hierarchy_level = 0
+        block_instance.rule = None
+        block_instance.feature = None
+        block_instance.block_key = config.block_tree_initial_block
+        block_instance.block_leaf = config.block_tree_initial_block
+        self.tree_block_count += 1
+        block_instance.indices = sorted(frozenset(data_df.index))
+        block_instance.parent_key = None
+        self.tree_blocks[0] = {}
+        self.tree_blocks[0][config.block_tree_initial_block] = block_instance
+        current_block[0] = initial_block
+        
+        for stage, rule in self.rule_stage_info_dict.items():
+
+            current_block[stage] = {}
+            self.tree_blocks[stage] = {}
+            
+            for k,v in current_block[stage-1].items():
+                parent_key = k
+                subset_idx_list = list(v)
+                current_block = self._add_block(parent_key, subset_idx_list, stage, rule, data_df, current_block)
+
+        print("\n"); self._print_all()
+
+    def _add_block(self, parent_key, subset_idx_list, stage, rule, data_df, current_block):
+        
+        current_block = copy.deepcopy(current_block)
+
+        rule_method = self._rule_method_allocator(rule['rule_name'])
+        if rule_method is not None:
+            blocks = rule_method(data_df[rule['feature']].loc[subset_idx_list], rule['rule_specs']['params'], rule['feature'])
+            # print("Blocks received\n",blocks)
+
+            keys_df = pd.DataFrame({"index":blocks.index,"key":blocks})        
+            #reassign keys_df so each record idx has its own key
+            keys_df = keys_df.explode("key")
+
+            #create sub-blocks
+            for new_key, subset_df in keys_df.groupby("key"):
+                block_instance = self.Block()
+                keys_idxs = frozenset(subset_df.index)
+                new_block_key = parent_key + f"-{rule['feature']}_{rule['rule_name']}:{new_key}"
+                current_block[stage][new_block_key] = sorted(keys_idxs)
+
+                block_instance.hierarchy_level = stage
+                block_instance.rule = rule['rule_name']
+                block_instance.feature = rule['feature']
+                block_instance.block_key = new_block_key
+                block_instance.block_leaf = f"{rule['rule_name']}:{new_key}"
+                block_instance.indices = sorted(keys_idxs)
+                block_instance.parent_key = parent_key
+                self.tree_blocks[stage][new_block_key] = block_instance
+                self.tree_hierarchy_count = stage
+
+        return current_block
+
+    def _rule_method_allocator(self, block_rule_name):
+        # print("Looking for ",block_rule_name)
+        if block_rule_name=="phonetic":
+            return self.rule_method_instance._phonetic
+        if block_rule_name=="phonetic_combination":
+            return self.rule_method_instance._phonetic_combination
+        if block_rule_name=="two_of_three_date":
+            return self.rule_method_instance._two_of_three_date
+
+    def _track_pair_provenance_and_weights(self):
+        
+        records =  set()
+
+        #create graph: create set with all record indices
+        for stage, block_dict in self.tree_blocks.items():
+            for block_key, block_instance in block_dict.items():
+                if block_instance.block_key == config.block_tree_initial_block:
+                    continue
+                for record_idx in block_instance.indices:
+                    records.update([record_idx])
+        #now create graph for each record idx
+        for record_idx in records:
+            self.prepruned_graph[record_idx] = {}
+
+        for stage, block_dict in self.tree_blocks.items():
+            for key, block_instance in block_dict.items():
+
+                #iterate over the block instances without repeat
+                for i in range(0, len(block_instance.indices)):#start at 1 because 0 is root
+                    for j in range(i+1, len(block_instance.indices)):
+
+                        if block_instance.hierarchy_level == 0:
+                            continue
+
+                        #add pair key provenance
+                        edge_pair = (min(block_instance.indices[i], block_instance.indices[j]), 
+                                    max(block_instance.indices[i], block_instance.indices[j]))
+                        
+                        if edge_pair not in self.prepruned_graph_provenance:
+                            self.prepruned_graph_provenance[edge_pair] = set()
+                        
+                        self.prepruned_graph_provenance[edge_pair].update([block_instance.block_key])
+                        
+                        #add +1 to weight count of pair co-ocurrences=> e.g. graph_weights dict (record0, {record1:co-ocurrences})
+                        self.prepruned_graph[block_instance.indices[i]][block_instance.indices[j]] = self.prepruned_graph[block_instance.indices[i]].get(block_instance.indices[j], 0) + 1
+                        self.prepruned_graph[block_instance.indices[j]][block_instance.indices[i]] = self.prepruned_graph[block_instance.indices[j]].get(block_instance.indices[i], 0) + 1
+
+        print("\n");print("self.prepruned_graph",self.prepruned_graph)
+
+        return self.prepruned_graph
+    
+    def _prune_graph(self):
+
+        pruned_pairs = []
+
+        #retain singletons in pre-pruned graph
+        self.pruned_graph = {record:{} for record in self.prepruned_graph}
+
+        #iterate over connections of prepruned G nodes and assigns edge weight if above required weight
+        for record1, connection in self.prepruned_graph.items():
+            for record2, pair_weight in connection.items():
+                if pair_weight > config.static_threshold_weight:
+                    self.pruned_graph[record1][record2] = pair_weight
+                    self.pruned_graph[record2][record1] = pair_weight
+
+        for record1, connection in self.pruned_graph.items():
+            for record2, weight in connection.items():
+                if (record1,record2) in self.prepruned_graph_provenance:
+                    pruned_pairs.append((record1,record2))
+                    self.pruned_graph_provenance[(record1,record2)] = self.prepruned_graph_provenance[(record1,record2)]
+
+        print("\n");print("self.pruned_graph", self.pruned_graph)
+
+        return pruned_pairs
+
+
+================================================
+File: block_klsh/blocking/blocking_rules_lib.json
+================================================
+{
+    "rules": {
+        "phonetic_combination": {
+            "type": "text",
+            "params": {"algorithms": ["first_char", "first_two_char", "first_three_char", "last_three_char", "consonants"]},
+            "default": false,
+            "description": "multi-method pari-passu name blocking"
+        },
+        "two_of_three_date": {
+            "type": "temporal",
+            "params": "",
+            "default": false,
+            "description": "Blocking based on two of three date components matching (month-year + day-year, month-year + day-month, day-year + day-month)"
+        },
+        "sliding_window": {
+            "type": "temporal",
+            "params": {"window_days": 7},
+            "default": false,
+            "description": "7-day sliding window blocks"
+        }
+    }
+}
+
+
+
+================================================
+File: block_klsh/blocking/blocking_utils.py
+================================================
+import pandas as pd
+import ast
+import networkx as nx
+import matplotlib.pyplot as plt
+
+import config as config
+
+def print_candidates_for_each_block(blocks):
+    candidate_pair_indices = set()
+    
+    for block_key, block in blocks.items():
+        #skip initial_block and blocks with fewer than 2 records
+        if block_key == config.block_tree_initial_block or len(block) < 2:
+            continue
+            
+        indices = list(block)
+        for i in range(len(indices)):
+            for j in range(i+1, len(indices)):
+                candidate_pair_indices.add((indices[i], indices[j]))
+                if config.verbose:
+                    print(f"Candidate pair indices in block {block_key}: {indices[i]} {indices[j]}")
+    
+    return candidate_pair_indices
+
+
+================================================
+File: block_klsh/blocking/graph_conn.py
+================================================
+import networkx as nx
+import matplotlib.pyplot as plt
+from networkx.drawing.nx_agraph import graphviz_layout
+
+import config
+
+class DeduP_Graph():
+    def __init__(self):
+        self.graph = None
+
+    def _create_graph(self, block_tree: dict):
+        G = nx.DiGraph()
+
+        for hierarchy_level, tree_block_dict in block_tree.items():
+            for block_key, block_instance in tree_block_dict.items():
+                G.add_node(
+                    block_key,
+                    hierarchy_level = block_instance.hierarchy_level,
+                    feature = block_instance.feature,
+                    parent_key = block_instance.parent_key,
+                    block_key = block_instance.block_key,
+                    block_leaf = block_instance.block_leaf,
+                    rule = block_instance.rule,
+                    indices = block_instance.indices,
+                    node_labels = f"{block_instance.block_leaf}\n{len(block_instance.indices)} records",
+                    block_instance = block_instance
+                )
+        
+        self.graph = G
+
+    def _create_edges(self, block_tree: dict):
+        edges_from_to_key = []
+        for hierarchy_level, tree_block_dict in block_tree.items():
+            for block_key, block_instance in tree_block_dict.items():
+                if block_instance.parent_key == None:
+                    continue
+                edges_from_to_key.append((block_instance.parent_key, block_key))
+
+        self.graph.add_edges_from(edges_from_to_key)
+
+    def _visualize_graph_tree(self):
+        #create a mapping of original node names to integers
+        mapping = {node: i for i, node in enumerate(self.graph.nodes())}
+        G_int = nx.relabel_nodes(self.graph, mapping)
+    
+        #graphviz layout 'dot' style to arrange nodes left-to-right
+        pos = graphviz_layout(G_int, prog='dot', args='-Grankdir=LR')
+
+        #map positions back to original nodes
+        pos_original = {original: pos[mapped] for original, mapped in mapping.items()}
+
+        #get node labels that show block_leaf value and record count
+        leave_names = nx.get_node_attributes(self.graph, "indices")
+
+        plt.figure(figsize=(12, 6))
+        nx.draw(self.graph, 
+                pos_original,
+                with_labels=True, 
+                labels=leave_names, 
+                font_size=5,
+                arrows=True, 
+                node_size=500,
+                node_color="lightblue")
+        
+        #draw labels separately with custom color
+        nx.draw_networkx_labels(self.graph, 
+                            pos_original, 
+                            labels=leave_names, 
+                            font_size=5,
+                            font_color='red')  # Set the color to red
+        
+        plt.title("Hierarchical Directed Graph")
+        plt.savefig(f"{config.graph_dir}/graph_tree", dpi=300, bbox_inches='tight', pad_inches=0.05)
+        plt.close()
+
+
+================================================
+File: block_klsh/blocking/graph_visualization.py
+================================================
+import networkx as nx
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+def visualize_graph_components(graph_weights, save_fname, title, edge_provenance):
+
+    plt.figure(figsize=(12,6))
+    G = nx.Graph()
+
+    #add nodes
+    for node1, node2_weight in graph_weights.items():
+        G.add_node(node1)
+
+    #add edges
+    nodes = []
+    for node1, node2_weight in graph_weights.items():
+        for node2, weight in node2_weight.items():
+            G.add_edge(node1, node2, weight=weight)
+            if (node1, node2) in edge_provenance:
+                G.edges[node1, node2]['provenance'] = ", ".join(edge_provenance[(node1, node2)])
+
+    #layout spacing
+    pos = nx.spring_layout(G, seed=42, k=1.5)
+
+    #draw nodes first
+    nx.draw_networkx_nodes(G,pos, node_size=1000, node_color='lightblue')
+    nodes = {node: str(node) for node in G.nodes()}
+    nx.draw_networkx_labels(G, pos, labels=nodes, font_size=12, font_color='black')
+
+    #add weighted weights
+    for (node1, node2, data) in G.edges(data=True):
+        width = data["weight"] * 2
+        nx.draw_networkx_edges(G, pos,width=width, edgelist=[(node1,node2)], alpha=0.7, edge_color='navy')# edgelist = (node1,node2), 
+
+    #choose to show provenance or weights
+    #edge_labels = nx.get_edge_attributes(G, name="provenance")
+    edge_labels = nx.get_edge_attributes(G, name="weight")
+
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8, font_weight='bold')
+
+    plt.title(title, fontsize=20, fontweight=20)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig(save_fname, dpi=300, bbox_inches='tight', pad_inches=0.2)
+    plt.close()
+
+    #find connected components
+    components = list(nx.connected_components(G))
+    
+    #get pairs and singletons for each component
+    singleton_list = []
+    component_pairs_and_singletons = []
+    for component in components:
+        component = list(component)
+        if len(component) == 1:
+            print("\t=> singleton",component)
+            singleton_list.append(component)
+            component_pairs_and_singletons.append(component)
+        else:
+            pairs = [(component[i], component[j]) 
+                    for i in range(len(component)) 
+                    for j in range(i+1, len(component))]
+            component_pairs_and_singletons.append(pairs)
+
+    return G, component_pairs_and_singletons, singleton_list
+
+def visualize_weights_graph(pruned_graph, save_fname, title):
+
+    plt.figure(figsize=(12,6))
+    G = nx.Graph()
+
+    #add nodes
+    for node_1_2, weight in pruned_graph.items():
+        G.add_node(node_1_2[0])
+
+    #add edges
+    nodes = []
+    for node_1_2, weight in pruned_graph.items():
+        G.add_edge(node_1_2[0], node_1_2[1], weight=weight)
+
+    #layout spacing
+    pos = nx.spring_layout(G, seed=42, k=1.5)
+
+    #draw nodes first
+    nx.draw_networkx_nodes(G,pos, node_size=1000, node_color='lightblue')
+    nodes = {node: str(node) for node in G.nodes()}
+    nx.draw_networkx_labels(G, pos, labels=nodes, font_size=12, font_color='black')
+
+    #add weighted weights
+    for (node1, node2, data) in G.edges(data=True):
+        width = data["weight"] * 2
+        nx.draw_networkx_edges(G, pos,width=width, edgelist=[(node1,node2)], alpha=0.7, edge_color='navy')# edgelist = (node1,node2), 
+
+    plt.title(title, fontsize=20, fontweight=20)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig(save_fname, dpi=300, bbox_inches='tight', pad_inches=0.2)
+    plt.close()
+    
+def visualize_nx_graph(G, entities, fname, title, seed=42):
+    
+    plt.figure(figsize=(12,6))
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, with_labels=True, node_color="lightblue", edge_color="gray", node_size=500)
+
+    #build a mapping from node to component id
+    component_map = {}
+    for comp_id, comp in enumerate(entities):
+        for node in comp:
+            component_map[node] = comp_id
+
+    #formatting - shift label
+    pos_shifted = {}
+    for node, (x, y) in pos.items():
+        pos_shifted[node] = (x, y + 0.06) 
+
+    #draw component labels in red
+    nx.draw_networkx_labels(G, pos_shifted, labels=component_map, font_color="red")
+
+    plt.title(title, pad=20)
+    plt.axis('off')
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1)
+    plt.savefig(fname, dpi=300, bbox_inches='tight', pad_inches=0.5) 
+    plt.close()
+
+
+================================================
+File: block_klsh/blocking/rule_methods.py
+================================================
+import numpy as np
+import pandas as pd
+import joblib
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, FunctionTransformer, RobustScaler, QuantileTransformer
+from jellyfish import soundex, metaphone
+
+import config
+
+class Rule_Methods_Library:
+    
+    def _phonetic(self, feature_series: pd.Series, method_params:dict, feature_name:str) -> pd.Series:
+        
+        def encode(x):
+            x = str(x).strip()
+            key_list = []
+            if "soundex" in method_params["algorithms"]:
+                key_list.append(soundex(x))
+            if "metaphone" in method_params["algorithms"]:
+                key_list.append(metaphone(x))
+            
+            return "_".join(key_list)
+        
+        return feature_series.apply(encode)
+    
+    def _phonetic_combination(self, feature_series: pd.Series, method_params:dict, feature_name:str) -> pd.Series:
+        
+        def encode_combo(x):
+            key_list = []
+            if "first_char" in method_params["algorithms"]:
+                key_list.append(str(x).lower()[0:1])
+            
+            if "first_two_char" in method_params["algorithms"]:
+                key_list.append(str(x).lower()[0:2])
+
+            if "first_three_char" in method_params["algorithms"]:
+                key_list.append(str(x).lower()[0:3])
+
+            if "last_three_char" in method_params["algorithms"]:
+                key_list.append(str(x).lower()[-3:])
+
+            if "consonants" in method_params["algorithms"]:
+                key_list.append(''.join([c for c in str(x).lower() if c.isalpha() and c not in 'aeiou']))
+            
+            return key_list
+        
+        return feature_series.apply(encode_combo)
+    
+    def _two_of_three_date(self, feature_series:pd.Series, method_params:dict, feature_name:str) -> pd.Series:
+
+        feature_series = pd.to_datetime(feature_series, format="%d/%m/%Y", errors="coerce")
+        
+        def combine(x):
+            try:
+                return [
+                    f"my_{x.month:02d}_{x.year:02d}_dy_{x.day:02d}_{x.year:02d}",
+                    f"my_{x.month:02d}_{x.year:02d}_dm_{x.day:02d}_{x.month:02d}",
+                    f"my_{x.day:02d}_{x.year:02d}_dm_{x.day:02d}_{x.month:02d}"
+                ]
+            except (AttributeError, TypeError, ValueError) as e:
+                print(f"[ERROR]: Can't process Blcking Method _one_of_three_date: {e}")
+                return ["invalid_date"]
+            
+        result = feature_series.apply(combine)
+        
+        #print("_two_of_three_date key list",result)
+
+        return result
+                
+    def _sliding_window(self, feature_series:pd.Series, method_params:dict, feature_name:str) -> pd.Series:
+        dt = pd.to_datetime(feature_series)
+        days = (dt - pd.Timestamp('1970-01-01')).dt.days
+        return (days // method_params["algorithms"]).astype(str)
+
+
+================================================
+File: block_klsh/clustering/klsh_engine.py
+================================================
+import numpy as np
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+import networkx as nx
+
+from features.features_engineering import Feature_Engineering
+from clustering.perf_metrics import Performance_Metrics
+from blocking.graph_visualization import visualize_nx_graph
+
+import config
+
+class KLSH_Engine():
+    def __init__(self, feature_engineering_instance: Feature_Engineering, performance_metrics_instance: Performance_Metrics):
+        self.best_sil_score = -1
+        self.best_sil_k = -1
+        self.feature_engineering_instance = feature_engineering_instance
+        self.perf_metrics_instance = performance_metrics_instance
+        self.wcss_dict = {}
+        self.best_elbow_k = -1
+        self.singleton_list = []
+        self.final_klsh_clusters = {}
+
+    def predict_klsh_clusters_and_metrics(self, component_pairs_and_singletons_list, data_df: pd.DataFrame, 
+                                          component_idx, k_bottom, k_top):
+        
+        self.final_klsh_clusters = {}
+
+        #true values
+        if component_idx==0: true_pairs = config.true_pairs_component_0
+        elif component_idx==1: true_pairs = config.true_pairs_component_1
+        elif component_idx==2: true_pairs = config.true_pairs_component_2
+        # elif component_idx==3: true_pairs = config.true_pairs_component_3
+        # elif component_idx==4: true_pairs = config.true_pairs_component_3
+        else:
+            print("Ground Truth Component Values not found, exiting.")
+            exit(0)
+        
+        components_df = []
+        for i in range(len(component_pairs_and_singletons_list)):
+            df = pd.DataFrame(columns=data_df.columns)
+            if len(component_pairs_and_singletons_list[i]) > 1:
+                idx_set = set(idx for pair in component_pairs_and_singletons_list[i] for idx in pair)
+            else:
+                idx_set = component_pairs_and_singletons_list[i]
+            df = data_df.iloc[list(idx_set)]
+            components_df.append(df)
+
+        #klsh
+        print("\n=== KLSH Cluster Analysis ===")
+        print("\nComponents pairs",component_pairs_and_singletons_list[component_idx])
+        unique_component_records = np.unique(component_pairs_and_singletons_list[component_idx])
+        print("unique_component_records",unique_component_records)
+
+        k = k_bottom
+        target_num_k = min(k_top, len(unique_component_records))+1 - k_bottom
+        df_numeric = lowest_k_highest_F1_metrics = None
+        metrics_pairs_result = []
+        
+        if len(unique_component_records) > 1:#pairs
+
+            for k in range(k_bottom, min(k_top, len(unique_component_records))+1):
+
+                if config.verbose:
+                    print("\nK=",k)
+
+                component_indices = set(np.array(component_pairs_and_singletons_list[component_idx]).flatten())
+
+                component_df = data_df.iloc[list(component_indices)]
+                df_numeric, pred_clusters, pred_cluster_records, pred_cluster_pairs, pred_pairs, similarity_matrix = self.klsh_embedding_numeric(component_df, k, target_num_k, config.feature_weights, self.feature_engineering_instance)
+            
+                if config.verbose:
+                    print("pred_clusters",pred_clusters)
+                    print("pred_cluster_records",pred_cluster_records)
+                    print("pred_cluster_record_pairs",pred_cluster_pairs)
+                    print("pred_pairs",pred_pairs)
+
+                self.final_klsh_clusters[k] = pred_cluster_records
+
+                #eval lsh
+                self.graph_cluster(unique_component_records, pred_pairs, component_idx, k)
+                metrics_pairs_result = self.perf_metrics_instance.calculate_metrics(pred_pairs, true_pairs, k, metrics_pairs_result)
+                
+        else: #singleton
+            pred_clusters = 0
+            pred_pairs = []
+            pred_cluster_pairs = {0:None}
+            pred_cluster_records = unique_component_records[0]
+                
+            if config.verbose:
+                print("pred_clusters",pred_clusters)
+                print("pred_cluster_records",pred_cluster_records)
+                print("pred_cluster_record_pairs",pred_cluster_pairs)
+                print("pred_pairs",pred_pairs)
+
+            self.final_klsh_clusters[k] = pred_cluster_records
+
+            #eval lsh
+            self.graph_cluster(unique_component_records, pred_pairs, component_idx, k)
+            metrics_pairs_result = self.perf_metrics_instance.calculate_metrics(pred_pairs, true_pairs, k, metrics_pairs_result)
+
+        metrics_pairs_result_df = pd.DataFrame(metrics_pairs_result)
+        
+        lowest_k_highest_F1_metrics = metrics_pairs_result_df.loc[metrics_pairs_result_df["F1"].idxmax()]
+        
+        if config.verbose:
+            print("metrics_pairs_result_df", metrics_pairs_result_df)
+            print("lowest_k_highest_F1_metrics:\n",lowest_k_highest_F1_metrics)
+
+        return df_numeric, pred_clusters, metrics_pairs_result_df, lowest_k_highest_F1_metrics
+    
+    def graph_cluster(self, unique_component_records, pred_pairs, component_idx, k):
+        
+        G = nx.Graph()
+
+        #add all records in component to capture singletons
+        G.add_nodes_from(set(unique_component_records))
+        if len(pred_pairs) > 0:
+            G.add_edges_from(pred_pairs)
+        entities = list(nx.connected_components(G))
+        if config.verbose:
+            print("Component entities", entities)
+        
+        visualize_nx_graph(G, entities, f"{config.graph_dir}/klsh_entities_graph_k_{k}_comp_{component_idx}", f"KLSH Entities Graph K={k} Component {component_idx}")
+
+    def create_records_similarity_matrix(self, df_numeric:pd.DataFrame):
+
+        num_feature_array = np.array(df_numeric)
+
+        cossim_matrix = cosine_similarity(num_feature_array)
+        
+        record_original_idx_list = df_numeric.index.tolist()
+
+        cossim_matrix_df = pd.DataFrame(
+            cossim_matrix,
+            index=record_original_idx_list,
+            columns=record_original_idx_list
+        )
+
+        if config.verbose:
+            print("cossim_matrix_df\n", cossim_matrix_df)
+
+        return cossim_matrix_df
+    
+    def klsh_embedding_numeric(self, data_df: pd.DataFrame, k, target_num_k, weights, feature_engineering_instance:Feature_Engineering, random_state=42):
+        
+        #transform features
+        if config.verbose:
+            print("datadf", data_df)
+        
+        df_numeric = data_df.copy()
+
+        df_numeric = df_numeric.drop('name', axis=1)
+
+        #tension, resonance, amt_sold fit to standardscaler
+        for col in df_numeric.columns:
+            if col != 'name' and col!='longevity' and col!='quality' and col!='tension_adj':
+                df_numeric[[col]] = StandardScaler().fit_transform(df_numeric[[col]])
+        
+        #project bool
+        cos_val, sin_val = self.feature_engineering_instance.embed_bool_category(df_numeric['tension_adj'])
+        df_numeric['tension_adj_cos'] = cos_val * weights['tension_adj_cos']
+        df_numeric['tension_adj_sin'] = sin_val * weights['tension_adj_sin']
+        df_numeric = df_numeric.drop('tension_adj', axis=1)
+        
+        df_numeric['tension'] = df_numeric['tension'].values * weights['tension']
+        df_numeric['resonance'] = df_numeric['resonance'].values * weights['resonance']
+
+        cos_dt, sin_dt = feature_engineering_instance.quarter_circle_dt_projection_series(df_numeric['longevity'])
+        df_numeric['longevity_cos'] = cos_dt * weights['longevity_cos']
+        df_numeric['longevity_sin'] = sin_dt * weights['longevity_sin']
+        df_numeric = df_numeric.drop('longevity', axis=1)
+
+        #project ordinal categ
+        #df_numeric['quality'] = df_numeric['quality'].values * weights['quality']
+        cos_quality, sin_quality = self.feature_engineering_instance.embed_ordinal_category(df_numeric['quality'])
+        df_numeric['quality_cos'] = cos_quality.values * weights['quality_cos']
+        df_numeric['quality_sin'] = sin_quality.values * weights['quality_sin']
+        df_numeric = df_numeric.drop('quality', axis=1)
+
+        df_numeric['amt_sold'] = df_numeric['amt_sold'].values * weights['amt_sold']
+        
+        # Concatenate features
+        num_features_array = np.array(df_numeric)
+
+        # Calculate pairwise distances
+        similarity_matrix = cosine_similarity(num_features_array)
+        
+        #TODO move so doesn't create each time
+        all_records_cossim_matrix_df = self.create_records_similarity_matrix(df_numeric)
+        #print("similarity_matrix",similarity_matrix)
+        
+        # K-means clustering
+        kmeans = KMeans(n_clusters=k, random_state=random_state)
+        pred_clusters = kmeans.fit_predict(num_features_array)
+
+        #Get record idx in df_numeric of cluster result
+        cluster_records = {}
+        cluster_record_pairs = {}
+        record_pairs = []
+        
+        for cluster_id in np.unique(pred_clusters):
+            cluster_mask = (cluster_id==pred_clusters)
+            original_indices = df_numeric.index[cluster_mask].tolist()
+            
+            if config.verbose:
+                print("original_indices",original_indices)
+                print(f"KMeans Suggest add records {original_indices} to cluster {cluster_id}")
+            
+            for i in range(len(original_indices)):
+                for j in range(i+1, len(original_indices)):
+                    print(f"Record {original_indices[i]} vs {original_indices[j]} cossim = {all_records_cossim_matrix_df.loc[original_indices[i],original_indices[j]]}")
+                    
+            cluster_records[cluster_id] = original_indices
+
+            #pairs for each cluster
+            pairs = []
+            for i in range(len(original_indices)):
+                for j in range(i+1,len(original_indices)):
+                    pairs.append((original_indices[i],original_indices[j]))
+            cluster_record_pairs[cluster_id] = pairs
+            record_pairs.extend(pairs)
+
+        #elbow
+        if target_num_k>1:
+            kmeans.fit(num_features_array)
+            self.wcss_dict[k] = kmeans.inertia_
+            print("\nElbow within-cluster sum of squares (wcss)",self.wcss_dict)
+        else:
+            print("Skip Knee",target_num_k)
+
+        #silhouette
+        self.silhouette_analysis(num_features_array, pred_clusters, k)
+
+        # Return both cluster assignments and similarity matrix
+        return df_numeric, pred_clusters, cluster_records, cluster_record_pairs, record_pairs, similarity_matrix
+
+    def silhouette_analysis(self, num_features_array, pred_clusters, n_clusters):
+
+        if n_clusters > 1 and n_clusters < len(pred_clusters): #k must be greater than 1 and less than len data for siloutte
+            
+            score = silhouette_score(num_features_array, pred_clusters)
+            
+            if config.verbose:
+                print("This K",n_clusters,"has silhouette score",score, "vs silhouette best_score",self.best_sil_score)
+            
+            if score > self.best_sil_score:
+                self.best_sil_score = score
+                self.best_sil_k = n_clusters        
+                if config.verbose:
+                    print("silhouette score",score,"silhouette best_k",self.best_sil_k)
+        else:
+            print("[WARNING] K<1 or k=len, No silhouette_score to calculate.")
+
+        if config.verbose:
+            print("silhouette best_k",self.best_sil_k)
+
+
+================================================
+File: block_klsh/clustering/klsh_perf_visualization.py
+================================================
+import matplotlib.pyplot as plt
+
+import config
+
+def plot_elbow(wcss_dict: dict, component_idx):
+    
+    plt.figure(figsize=(8,5))
+    k_range = [k for k in wcss_dict.keys()]
+    wcss_range = [v for v in wcss_dict.values()]
+    
+    plt.plot(k_range, wcss_range, 'bx-')
+    plt.xlabel('Number of clusters (k)')
+    plt.ylabel('within-cluster sum of squares - WCSS (Inertia)')
+    plt.title(f"Elbow Method KLSH Component {component_idx} for Optimal K")
+    plt.savefig(f"{config.graph_dir}/klsh_elbow_component{component_idx}", dpi=300, bbox_inches='tight', pad_inches=0.5) 
+    plt.close()
+
+
+
+================================================
+File: block_klsh/clustering/perf_metrics.py
+================================================
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from kneed import KneeLocator
+
+import config
+
+class Performance_Metrics:
+
+    def calculate_metrics(self, candidate_pairs, true_pairs, k, metrics_pairs_result: list):
+        
+        tp = len(set(candidate_pairs) & set(true_pairs))
+        fp = len(set(candidate_pairs) - set(true_pairs))
+        fn = len(set(true_pairs) - set(candidate_pairs))
+        
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+        f1 = 2 * (precision*recall)/(precision+recall) if (precision*recall)>0 else 0
+
+        metrics_pairs_result.append({
+                    "K":k, 
+                    "F1": f1, 
+                    "Precision": precision, 
+                    "Recall": recall
+                    })
+
+        return metrics_pairs_result
+    
+    def ssilhouette(self, num_features_array, labels, k_top):
+        
+        X = num_features_array  # X is your 2D array of features
+
+        best_k = None
+        best_score = -1
+        for k in range(2, k_top):
+            kmeans = KMeans(n_clusters=k, random_state=42)
+            labels = kmeans.fit_predict(X)
+            score = silhouette_score(X, labels)
+            
+            if config.verbose:
+                print(f"k={k}, silhouette score={score:.3f}")
+            
+            if score > best_score:
+                best_score = score
+                best_k = k
+
+        if config.verbose:
+            print("Best k chosen based on silhouette score:", best_k)
+    
+    def find_best_elbok_k(self, wcss_dict: dict):
+        
+        sorted_k = sorted(wcss_dict.keys())
+        sorted_wcss = [wcss_dict[k] for k in sorted_k]
+        
+        if config.verbose:
+            print("Sorted WCSS:", sorted_wcss)
+        return KneeLocator(
+            sorted_k,
+            sorted_wcss,
+            curve='convex', 
+            direction='decreasing',
+            S=0.3
+        ).knee
+
+
+
+================================================
+File: block_klsh/data/example_apollo_0.csv
+================================================
+name,tension_adj,tension,resonance,longevity,quality,amt_sold
+Apollo ,1,3.051514,110.993063,13/04/2028,0,5000
+Apolo,1,3.5,108.5,13/03/2028,1,5000
+Apo,1,3.051514,109.25,13/04/2028,0,5000
+Apol,1,3.05,11.09,13/04/2029,0,4000
+Apollo,1,3.5,109.75,03/04/2028,0,4500
+Apollorium,0,6.25,92,24/08/2033,1,2500
+Apollo,0,2.627367,96.071012,24/09/2025,1,3000
+Apollo,0,2.627367,99,02/08/2025,1,3000
+Apollo,0,2.327367,95,24/08/2025,1,3000
+Apollo,0,2.6,95.5,24/08/2025,1,3000
+August FÃ¶rster,0,11.670953,119.348834,09/12/2030,3,5000
+August Forster,1,11.6,117,08/12/2030,3,5000
+August F,1,116,118,09/11/2030,3,5000
+August FÃ¶rster,0,1.6,119,08/11/2030,2,5000
+August Forster,0,6,105.75,03/11/2025,3,5000
+Agust FÃ¶rster,0,12.670953,121,09/12/2029,3,3000
+Baldwin,1,0.386124,116.575368,11/08/2026,8,15000
+Baldwin,1,1.386124,115,09/08/2026,7,15000
+Baldwin,1,0.3,116.1,10/07/2026,8,5000
+Baldwin,1,1.3,117,10/08/2025,8,50000
+Baldwin,1,1.3,116.575368,11/08/2026,6,500
+
+
+
+================================================
+File: block_klsh/features/features_engineering.py
+================================================
+import numpy as np
+import pandas as pd
+import hashlib
+
+import config
+
+class Feature_Engineering:
+   
+    def embed_bool_category(self, bool_col: pd.Series):
+
+        def quarter_circle_encoding(value):
+            if value==0:
+                return 1.0, 0.0
+            else:
+                return 0.0, 1.00
+            
+        projection = bool_col.apply(quarter_circle_encoding)
+
+        return projection.map(lambda x: x[0]), projection.map(lambda x: x[1])
+
+    def embed_ordinal_category(self, quality_col: pd.Series):
+
+        full_quality_range_list = list(range(config.quality_ordinal_range[1]+1))
+        quality_mappings = {value: value for value in full_quality_range_list}
+
+        df = pd.DataFrame()
+        df['quality_ordinal'] = quality_col.map(quality_mappings)
+
+        def quarter_circle_encoding(ordinal_value, max=config.quality_ordinal_range[1]):
+
+            angle = ordinal_value / max * (np.pi/2)
+            return np.cos(angle), np.sin(angle)
+        
+        projection = df['quality_ordinal'].apply(quarter_circle_encoding)
+
+        return projection.map(lambda x: x[0]), projection.map(lambda x: x[1])
+    
+    def quarter_circle_dt_projection_series(self, date_series):
+    
+        max_seconds = config.time_max_time_frame.total_seconds()
+
+        date_series = pd.to_datetime(date_series, errors="coerce")
+
+        def project_date(date):
+            if pd.isna(date):
+                print("ERROR DATE normalization",date)
+                exit()
+            delta = (date - config.time_reference_date).total_seconds()
+            fraction = max(0, min(1, delta / max_seconds))
+            theta = fraction * (np.pi / 2)
+            return np.cos(theta), np.sin(theta)
+
+        projection = date_series.apply(project_date)
+
+        cos_series = projection.map(lambda x: x[0])
+        sin_series = projection.map(lambda x: x[1])
+        
+        return cos_series, sin_series
+    
+    #two_of_three_date binning
+    def get_date_features(self, date_series):
+        date_series = pd.to_datetime(date_series, errors="coerce")
+        
+        #create binary features for each date component pair
+        my_features = np.zeros(len(date_series))  # month-year
+        dy_features = np.zeros(len(date_series))  # day-year
+        dm_features = np.zeros(len(date_series))  # day-month
+        
+        for i, date in enumerate(date_series):
+            if pd.notna(date):
+                def deterministic_hash(s):
+                    return int(hashlib.md5(f"seed42_{s}".encode()).hexdigest(), 16)
+                #create hash values for each component pair
+                my_hash = deterministic_hash(f"{date.month:02d}_{date.year:04d}") % 1000
+                dy_hash = deterministic_hash(f"{date.day:02d}_{date.year:04d}") % 1000
+                dm_hash = deterministic_hash(f"{date.day:02d}_{date.month:02d}") % 1000
+                
+                # Normalize to 0-1 range
+                my_features[i] = my_hash / 1000
+                dy_features[i] = dy_hash / 1000
+                dm_features[i] = dm_hash / 1000
+        
+        return np.column_stack([my_features, dy_features, dm_features])
+
+
+
+================================================
+File: block_klsh/optimization/bayopt_weights.py
+================================================
+from skopt import gp_minimize
+import numpy as np
+from skopt.callbacks import EarlyStopper
+
+from context import ER_Context
+import config
+
+#custom skopt value stopper
+class CustomEarlyStopper(EarlyStopper):
+    def __init__(self, early_stop_trigger):
+        self.stop_iter_target_value = early_stop_trigger
+
+    def _criterion(self, bayes_result):
+        if bayes_result.fun == self.stop_iter_target_value:
+            return True
+
+class BayOpt:
+    def __init__(self, component_pairs_and_singletonlist, data_df, k_bottom, k_top):
+        self.component_pairs_and_singletonlist = component_pairs_and_singletonlist
+        self.data_df = data_df
+        self.k_bottom = k_bottom
+        self.k_top = k_top
+        self.iteration = 0
+
+    def run_klsh_bayopt(self, ctx: ER_Context):
+        
+        search_space = [(0.0, 1.0) for i in range(len(config.feature_weights))]
+        
+        early_stopper = CustomEarlyStopper(config.bayes_early_stopper_value)
+        result = gp_minimize(
+        func =lambda weights: self.objective_bayopt(weights, ctx),
+        dimensions=search_space, n_calls=config.bayes_n_calls, random_state=42, callback=[early_stopper]
+        )
+        
+        #average those with some top result
+        top_weights = []
+        top_score = []
+
+        for i, weights in enumerate(result.x_iters):
+            score = -result.func_vals[i]
+            if score >= 0.99 * -(result.fun):
+                top_weights.append(weights)
+                top_score.append(score)
+
+        if top_weights and len(top_weights)>1:
+            avg_weights = np.mean(top_weights, axis=0)
+            print("The Bayesian weights are an average of ",len(top_weights),"results.")
+        else:
+            avg_weights = result.x
+      
+        return avg_weights
+
+    def objective_bayopt(self, feature_weights, ctx: ER_Context):
+
+        self.iteration += 1
+
+        config.feature_weights = {
+            'tension_adj_cos': feature_weights[0],
+            'tension_adj_sin': feature_weights[1],
+            'tension': feature_weights[2],
+            'resonance': feature_weights[3],
+            'longevity_cos': config.best_weights[4],
+            'longevity_sin': config.best_weights[5],
+            'quality_cos': feature_weights[6],
+            'quality_sin': feature_weights[7],
+            'amt_sold': feature_weights[8]
+        }
+        
+        all_components_f1 = []
+        all_components_precision = []
+        all_components_recall = []
+
+        for component_idx, component_pairs in enumerate(self.component_pairs_and_singletonlist):
+            
+            if len(component_pairs) > 1:
+                df_numeric, pred_clusters, metrics_pairs_result_df, lowest_k_highest_F1_metrics = ctx.klsh_engine_instance.predict_klsh_clusters_and_metrics(self.component_pairs_and_singletonlist, self.data_df, component_idx, self.k_bottom, self.k_top)
+                
+                if config.verbose:
+                    print("Returning lowest_k_highest_F1_metrics",lowest_k_highest_F1_metrics['F1'], "type",type(lowest_k_highest_F1_metrics))
+                
+                all_components_f1.append(float(lowest_k_highest_F1_metrics['F1']))
+                all_components_precision.append(float(lowest_k_highest_F1_metrics['Precision']))
+                all_components_recall.append(float(lowest_k_highest_F1_metrics['Recall']))
+                print(f"Finished {component_idx} Component Pairs {component_pairs}: -lowest_k_highest_F1", -lowest_k_highest_F1_metrics['F1'])
+            else:
+                print(f"[WARNING] Bayes: Skipped component {component_idx} as there are no pairs: len {len(component_pairs)}")
+        
+        components_avg_f1 = np.mean(all_components_f1)
+        components_avg_precision = np.mean(all_components_precision)
+        components_avg_recall = np.mean(all_components_recall)
+        
+        if config.verbose:
+            print(f"End Bayes Iter {self.iteration}:")
+            print("\tIter Current Weights",feature_weights)
+            print("\tIter Average F1", components_avg_f1)
+            print("\tIter Average Precision", components_avg_precision)
+            print("\tIter Average Recall", components_avg_recall)
+
+        return -components_avg_f1
+        
+        
+
+
