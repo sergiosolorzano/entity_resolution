@@ -16,13 +16,13 @@ The project is broken down by directory, with each directory representing a diff
     - Firstly the generation of a hierarchical graph for records in blocks and according to blocking rules. 
     - The resulting record pair relationships enable the construction of a record relationship grapth with components. 
     - Finally we cluster the records for each component using a K-Means algorithm, an approach we refer herein and based on [existing literature](https://arxiv.org/pdf/1810.05497), as KLSH.
-    - The methodology and its implementation is described in more detail in this publication ["Entity Resolution: Meta-Blocking and KLSH"](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs).
+    - The methodology and its implementation is described in more detail in this publication ["Entity Resolution: Meta-Blocking and KLSH"](https://www.researchgate.net/publication/393558462_ENTITY_RESOLUTION_META-BLOCKING_AND_KLSH).
     - the code for the project is [here](https://github.com/sergiosolorzano/entity_resolution/tree/main/block_klsh)
 
 2. [siameselike_encoder](https://github.com/sergiosolorzano/entity_resolution/tree/main/siameselike_encoder): An entity resolution experiment based on an Encoder and Clustering algorithm.
     - We create and train an encoder/network with transformed entity tabular feature data.
     - A feed forward network trained on tabular data learns representations from record features that serve as inputs for a clustering algorithm to separate entities in the representation space. 
-    - The methodology and its implementation is described in more detail in this publication ["Entity Resolution: Learned Representations of Tabular Data with Classic Neural Networks"](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt).
+    - The methodology and its implementation is described in more detail in this publication ["Entity Resolution: Learned Representations of Tabular Data with Classic Neural Networks"](https://www.researchgate.net/publication/392752969_Entity_Resolution_Learned_Representations_of_Tabular_Data_with_a_Classic_Neural_Network).
     - the code for the project is [here](https://github.com/sergiosolorzano/entity_resolution/tree/main/siameselike_encoder)
 
 <p>&nbsp;</p>
