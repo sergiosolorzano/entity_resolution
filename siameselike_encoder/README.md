@@ -8,7 +8,7 @@
 
 As part of our experimentation with methods for entity resolution tasks, I perform an exploration of the usefulness of a feed forward network's learned representations of record features for tabular data which serve as inputs for an entity resolution clustering algorithm.
 
-The network architecture, experiements, results and references are documented in in this publication ["Entity Resolution: Learned Representations of Tabular Data with a Classic Neural Network"](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt).
+The network architecture, experiements, results and references are documented in in this publication ["Entity Resolution: Learned Representations of Tabular Data with a Classic Neural Network"](https://www.researchgate.net/publication/392752969_Entity_Resolution_Learned_Representations_of_Tabular_Data_with_a_Classic_Neural_Network).
 
 The code project is an experimental prototype for research and does not address full error handling or production standards, and it's rather a setup for quick prototyping.
 
@@ -97,7 +97,7 @@ Running the script:
 To install torch, +cu128 worked for me: pip install --pre torch==2.8.0.dev20250325+cu128 torchvision==0.22.0.dev20250325+cu128 torchaudio==2.6.0.dev20250325+cu128 --index-url https://download.pytorch.org/whl/nightly/cu128
 
 ## Project Publication Post:
-Read this [blog](https://app.readytensor.ai/publications/entity-resolution-learned-representations-of-tabular-data-with-classic-neural-networks-MtUrsAPP6Mdt) for a description of the approach and its implementation.
+Read [the publication](https://www.researchgate.net/publication/392752969_Entity_Resolution_Learned_Representations_of_Tabular_Data_with_a_Classic_Neural_Network) for a description of the approach and its implementation.
 
 <p>&nbsp;</p>
 
