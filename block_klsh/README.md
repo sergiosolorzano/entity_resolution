@@ -10,7 +10,7 @@
 
 This repo sub-directory is part of a set of projects to explore the capabilities of ML/AI methods in entity resolution problems. It aims at solving deduplication and the identification of diverse records to group their corresponding entity.
 
-The methodology and its implementation is described in more detail in this blog ["Entity Resolution: Meta-Blocking and KLSH"](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs).
+The methodology and its implementation is described in more detail in this blog ["Entity Resolution: Meta-Blocking and KLSH"](https://www.researchgate.net/publication/393558462_ENTITY_RESOLUTION_META-BLOCKING_AND_KLSH).
 
 The project is an experimental prototype for research and does not address full error handling or production standards, and it's rather a setup for quick prototyping
 
@@ -54,7 +54,7 @@ The process results in an entity resolution result for the dataset of F-1/Precis
 <p>&nbsp;</p>
 
 ## Project Publication Post:
-Read this [blog](https://app.readytensor.ai/publications/entity-resolution-meta-blocking-and-klsh-3hz55CPSvHPs) for a description of the approach and its implementation.
+Read [the publication](https://www.researchgate.net/publication/393558462_ENTITY_RESOLUTION_META-BLOCKING_AND_KLSH) for a description of the approach and its implementation.
 
 <p>&nbsp;</p>
 
